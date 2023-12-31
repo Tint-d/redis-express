@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// schema.prisma
+
+model User {
+  id       String           @id @unique @default(uuid())
+  name     String
+  email    String           @unique
+  password String
+  role     Role             @default(USER)
+  profile  Profile?
+  orders   Order[]
+  payment  Payment_detail[]
+  reviews  Reviews[]
+}
+
+model Profile {
+  id      String @id @unique @default(uuid())
+  phone   String @unique
+  address String
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String @unique
+}
+
+model Category {
+  id           String    @id @unique @default(uuid())
+  categoryName String    @unique
+  product      Product[]
+}
+
+model Product {
+  id          String         @id @unique @default(uuid())
+  name        String
+  stock       Int
+  price       Int
+  image       String?
+  desc        String
+  cloudId     String?
+  category    Category       @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  orderDetail Order_detail[]
+  reviews     Reviews[]
+}
+
+model Reviews {
+  id      String  @id @unique @default(uuid())
+  comment String?
+  rating  Int
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+}
+
+model Order {
+  id            String          @id @unique @default(uuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderDetail   Order_detail[]
+  paymentDetail Payment_detail?
+  trackOrder    Track_order?
+  address       String
+  total         Int
+  time          DateTime        @default(now())
+}
+
+model Payment_detail {
+  id       String   @id @unique @default(uuid())
+  amount   Int
+  currency String
+  time     DateTime @default(now())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  orderId  String   @unique
+  order    Order    @relation(fields: [orderId], references: [id])
+}
+
+model Order_detail {
+  id        String  @id @unique @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  subTotal  Int
+  quantity  Int
+  price     Int
+}
+
+model Track_order {
+  id      String @id @unique @default(uuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
+  address String
+  status  Status @default(PREPARING)
+}
+
+enum Role {
+  USER
+  ADMIN
+  EMPLOYEE
+}
+
+enum Status {
+  PREPARING
+  SHIPPED
+  DELIVERD
+}
